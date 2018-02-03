@@ -1,0 +1,22 @@
+{
+  "name": "tryouttracker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tomhon/tryoutTracker.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tomhon/tryoutTracker/issues"
+  },
+  "homepage": "https://github.com/tomhon/tryoutTracker#readme",
+  "dependencies": {
+    "botbuilder": "^3.14.0"
+  }
+}
