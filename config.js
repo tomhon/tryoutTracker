@@ -1,6 +1,6 @@
 var sqlConfig = {
-    userName: '',
-    password: '',
+    userName: 'ScoreGoals',
+    password: 'Russia2018',
     server: 'tryouttrackersqlserver.database.windows.net',
     enforceTable: true, // If this property is not set to true it defaults to false. When false if the specified table is not found, the bot will throw an error.
     options: {
