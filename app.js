@@ -48,10 +48,15 @@ currentPlayerData.comments = 'Terrific ball control, excellent set pieces, needs
 var date;
 
 
+
 var bot = new builder.UniversalBot(connector, function (session) {
     session.userData.playerDataArray = Array();
     session.userData.playerDataArray.push(currentPlayerData);
+    session.userData.playerDataArray.push(currentPlayerData);
     console.log(session.userData.playerDataArray);
+    session.userData.playerDisplayArray = Array();
+    session.userData.playerDisplayArray.push(0);
+    session.userData.playerDisplayArray.push(1);
     session.beginDialog('mainNavigationCarousel').endDialog();
 
 });
@@ -70,30 +75,31 @@ bot.dialog('mainNavigationCarousel', function (session) {
         builder.CardAction.imBack(session, "Gender", "Gender: " + session.userData.tryoutGender ),
         builder.CardAction.imBack(session, "selectPlayer", "Select Player#" )
     ]);
-
-    function createPlayerHeroCard(session, playerNumber) {
+    function createPlayerHeroCard(session, playerIndex) {
         // console.log('createPlayerHeroCard called with' + playerNumber)
         playerHeroCard = new builder.HeroCard(session)
-        .title('Player #' + session.userData.playerDataArray[playerNumber].playerNumber)
-        .subtitle(session.userData.playerDataArray[playerNumber].comments)
+        .title('Player #' + session.userData.playerDataArray[playerIndex].playerNumber)
+        .subtitle(session.userData.playerDataArray[playerIndex].comments)
         .buttons([
-            builder.CardAction.imBack(session, "updateTechnicalSkills"+session.userData.playerDataArray[playerNumber].playerNumber, "Technical Skills: " + session.userData.playerDataArray[playerNumber].technicalSkills ),
-            builder.CardAction.imBack(session, "updateGameSkills"+session.userData.playerDataArray[playerNumber].playerNumber, "Game Skills: " + session.userData.playerDataArray[playerNumber].gameSkills),
-            builder.CardAction.imBack(session, "updateAthleticism"+session.userData.playerDataArray[playerNumber].playerNumber, "Athleticism: " + session.userData.playerDataArray[playerNumber].athleticism ),
-            builder.CardAction.imBack(session, "updateIntangibles"+session.userData.playerDataArray[playerNumber].playerNumber, "Intangibles: " + session.userData.playerDataArray[playerNumber].intangibles ),
-            builder.CardAction.imBack(session, "updateComments"+session.userData.playerDataArray[playerNumber].playerNumber, "Add Comments" ),
-            builder.CardAction.imBack(session, "closePlayer"+session.userData.playerDataArray[playerNumber].playerNumber, "Close this Player" ),
+            builder.CardAction.imBack(session, "updateTechnicalSkills"+session.userData.playerDataArray[playerIndex].playerNumber, "Technical Skills: " + session.userData.playerDataArray[playerIndex].technicalSkills ),
+            builder.CardAction.imBack(session, "updateGameSkills"+session.userData.playerDataArray[playerIndex].playerNumber, "Game Skills: " + session.userData.playerDataArray[playerIndex].gameSkills),
+            builder.CardAction.imBack(session, "updateAthleticism"+session.userData.playerDataArray[playerIndex].playerNumber, "Athleticism: " + session.userData.playerDataArray[playerIndex].athleticism ),
+            builder.CardAction.imBack(session, "updateIntangibles"+session.userData.playerDataArray[playerIndex].playerNumber, "Intangibles: " + session.userData.playerDataArray[playerIndex].intangibles ),
+            builder.CardAction.imBack(session, "updateComments"+session.userData.playerDataArray[playerIndex].playerNumber, "Add Comments" ),
+            builder.CardAction.imBack(session, "closePlayer"+session.userData.playerDataArray[playerIndex].playerNumber, "Close this Player" ),
         ])
         return playerHeroCard;
     }
-
     msg.addAttachment(setupHeroCard);
-    //add a new heroCard for each player set to display
-    session.userData.playerDataArray.forEach(function(element, index) {
-        if (session.userData.playerDataArray[index].display) {
-            msg.addAttachment(createPlayerHeroCard(session,index));
-        }
-    });
+    //add a new heroCard for each player set to display - display in reverse order
+    // session.userData.playerDataArray.forEach(function(element, index) {
+    //     if (session.userData.playerDataArray[index].display) {
+    //         msg.addAttachment(createPlayerHeroCard(session,index));
+    //     }
+    session.userData.playerDisplayArray.forEach(function(element, index) {
+            msg.addAttachment(createPlayerHeroCard(session,element));
+        });
+    console.log(session.userData.playerDataArray);
     session.send(msg);
     session.endDialog(); //should never get called
 });
@@ -109,17 +115,18 @@ bot.dialog('selectPlayer', [
         indexToDisplay = session.userData.playerDataArray.findIndex(function(currentValue, index) {
             return session.userData.playerDataArray[index].playerNumber==results.response});
         console.log('Index to Display= ' + indexToDisplay);
-        if (!(indexToDisplay == -1)) 
-            {session.userData.playerDataArray[indexToDisplay].display=true;} 
-            else 
-            {   
-                var newPlayerData = new playerData;
+        if (indexToDisplay == -1) 
+            {   var newPlayerData = new playerData;
                 newPlayerData.playerNumber = results.response;
                 date = new Date();
                 newPlayerData.timestamp = date.toISOString();
                 session.userData.playerDataArray.push(newPlayerData);
+                //find index of last element of playerDataArray
+                indexToDisplay = session.userData.playerDataArray.unshift() - 1;
                 console.log('new playerTracking object added');
             };
+        session.userData.playerDisplayArray.splice(0,0,indexToDisplay);
+        console.log(session.userData.playerDisplayArray);
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
 ]).triggerAction({ matches: /selectPlayer/i });
@@ -131,11 +138,18 @@ bot.dialog('closePlayer', [
         //strips 'closePlayer' from the message that called the dialog
         playerNumberToClose = session.message.text.slice(11);
 
-        indexToClose = session.userData.playerDataArray.findIndex(function(currentValue, index) {
+        playerDataIndexToClose = session.userData.playerDataArray.findIndex(function(currentValue, index) {
             return session.userData.playerDataArray[index].playerNumber==parseInt(playerNumberToClose);
         });
-        console.log('Closing Index' + indexToClose);
-        session.userData.playerDataArray[indexToClose].display=false;
+
+        playerDisplayIndexToClose = session.userData.playerDisplayArray.findIndex(function(currentValue, index) {
+            return session.userData.playerDisplayArray[index]==playerDataIndexToClose;
+        });
+
+        session.userData.playerDisplayArray.splice(playerDisplayIndexToClose,1);
+
+
+        console.log('Closing Display Index' + playerDisplayIndexToClose);
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
 ]).triggerAction({ matches: /closePlayer/i });
