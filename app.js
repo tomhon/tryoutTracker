@@ -47,16 +47,12 @@ currentPlayerData.comments = 'Terrific ball control, excellent set pieces, needs
 
 var date;
 
-
-
 var bot = new builder.UniversalBot(connector, function (session) {
     session.userData.playerDataArray = Array();
-    session.userData.playerDataArray.push(currentPlayerData);
     session.userData.playerDataArray.push(currentPlayerData);
     console.log(session.userData.playerDataArray);
     session.userData.playerDisplayArray = Array();
     session.userData.playerDisplayArray.push(0);
-    session.userData.playerDisplayArray.push(1);
     session.beginDialog('mainNavigationCarousel').endDialog();
 
 });
@@ -126,7 +122,6 @@ bot.dialog('selectPlayer', [
                 console.log('new playerTracking object added');
             };
         session.userData.playerDisplayArray.splice(0,0,indexToDisplay);
-        console.log(session.userData.playerDisplayArray);
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
 ]).triggerAction({ matches: /selectPlayer/i });
@@ -137,18 +132,13 @@ bot.dialog('closePlayer', [
         console.log('closePlayer called');
         //strips 'closePlayer' from the message that called the dialog
         playerNumberToClose = session.message.text.slice(11);
-
         playerDataIndexToClose = session.userData.playerDataArray.findIndex(function(currentValue, index) {
             return session.userData.playerDataArray[index].playerNumber==parseInt(playerNumberToClose);
         });
-
         playerDisplayIndexToClose = session.userData.playerDisplayArray.findIndex(function(currentValue, index) {
             return session.userData.playerDisplayArray[index]==playerDataIndexToClose;
         });
-
         session.userData.playerDisplayArray.splice(playerDisplayIndexToClose,1);
-
-
         console.log('Closing Display Index' + playerDisplayIndexToClose);
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
@@ -169,10 +159,19 @@ bot.dialog('updateTechnicalSkills', [
     },
     function (session, results) {
         session.userData.playerDataArray[indexToUpdate].technicalSkills = results.response;
+        movePlayerToFrontOfDisplay(session,indexToUpdate);
         console.log("Player " + playerNumberToUpdate + " Technical Skills set to " + session.userData.playerDataArray[indexToUpdate].technicalSkills);
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
 ]).triggerAction({ matches: /updateTechnicalSkills/i });
+
+function movePlayerToFrontOfDisplay (session, playerDataArrayIndex) {
+    playerDisplayIndexToMoveToFront = session.userData.playerDisplayArray.findIndex(function(currentValue, index) {
+        return session.userData.playerDisplayArray[index]==playerDataArrayIndex;
+    });
+    session.userData.playerDisplayArray.splice(playerDisplayIndexToMoveToFront,1);
+    session.userData.playerDisplayArray.splice(0,0,playerDataArrayIndex);
+}
 
 
 // Dialog to update Game Skills Score 
@@ -190,6 +189,7 @@ bot.dialog('updateGameSkills', [
     },
     function (session, results) {
         session.userData.playerDataArray[indexToUpdate].gameSkills = results.response;
+        movePlayerToFrontOfDisplay(session,indexToUpdate);
         console.log("Player " + playerNumberToUpdate + " Game Skills set to " + session.userData.playerDataArray[indexToUpdate].gameSkills);
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
@@ -210,6 +210,7 @@ bot.dialog('updateAthleticism', [
     },
     function (session, results) {
         session.userData.playerDataArray[indexToUpdate].athleticism = results.response;
+        movePlayerToFrontOfDisplay(session,indexToUpdate);
         console.log("Player " + playerNumberToUpdate + " Game Skills set to " + session.userData.playerDataArray[indexToUpdate].athleticism);
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
@@ -230,6 +231,7 @@ bot.dialog('updateIntangibles', [
     },
     function (session, results) {
         session.userData.playerDataArray[indexToUpdate].intangibles = results.response;
+        movePlayerToFrontOfDisplay(session,indexToUpdate);
         console.log("Player " + playerNumberToUpdate + " Game Skills set to " + session.userData.playerDataArray[indexToUpdate].intangibles);
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
@@ -250,6 +252,7 @@ bot.dialog('updateComments', [
     },
     function (session, results) {
         session.userData.playerDataArray[indexToUpdate].comments += (", " + results.response);
+        movePlayerToFrontOfDisplay(session,indexToUpdate);
         console.log("Player " + playerNumberToUpdate + " Comments set to " + session.userData.playerDataArray[indexToUpdate].comments);
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
