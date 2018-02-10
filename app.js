@@ -5,26 +5,19 @@ var restify = require('restify');
 
 var sqlConfig = require('./config');
 // var trackingAdaptiveCard = require('./adaptiveCard');
-
-
-
+var fetchPlayerList = require("./fetchPlayerList");
 
 var sqlClient = new azure.AzureSqlClient(sqlConfig);
-
 var sqlStorage = new azure.AzureBotStorage({ gzipData: false }, sqlClient);
-
 var connector = new builder.ChatConnector({
-
     appId: process.env.MICROSOFT_APP_ID,
-
     appPassword: process.env.MICROSOFT_APP_PASSWORD
-
 });
 
 function playerData() {
     this.timestamp = '';
     this.playerNumber = 0;
-    this.playerName = '';
+    this.playerName = 'Unknown';
     this.technicalSkills = 0;
     this.gameSkills = 0;
     this.athleticism= 0;
@@ -32,6 +25,7 @@ function playerData() {
     this.comments= '';
     this.display = true;
 }
+
 
 
 
@@ -64,17 +58,19 @@ bot.dialog('mainNavigationCarousel', function (session) {
     msg.attachmentLayout(builder.AttachmentLayout.carousel);
     setupHeroCard = new builder.HeroCard(session)
     .title('Select Players to Track')
-    .subtitle("Click to update information")
+    .subtitle("Select Date, Age Group & Gender to load Player Data. Then select individual players to track.")
     .buttons([
-        builder.CardAction.imBack(session, "TryoutDate", "Tryout Date: " + session.userData.tryoutDate ),
-        builder.CardAction.imBack(session, "Age Group", "Age Group: " + session.userData.tryoutAgeGroup ),
-        builder.CardAction.imBack(session, "Gender", "Gender: " + session.userData.tryoutGender ),
-        builder.CardAction.imBack(session, "selectPlayer", "Select Player#" )
+        builder.CardAction.imBack(session, "selectPlayer", "Select Player#" ),
+        builder.CardAction.imBack(session, "selectDate", "Tryout Date: " + session.userData.tryoutDate ),
+        builder.CardAction.imBack(session, "selectAgeGroup", "Age Group: " + session.userData.tryoutAgeGroup ),
+        builder.CardAction.imBack(session, "selectGender", "Gender: " + session.userData.tryoutGender ),
+        builder.CardAction.imBack(session, "storeData", "Tryout Complete - Save Results" )
     ]);
+
     function createPlayerHeroCard(session, playerIndex) {
         // console.log('createPlayerHeroCard called with' + playerNumber)
         playerHeroCard = new builder.HeroCard(session)
-        .title('Player #' + session.userData.playerDataArray[playerIndex].playerNumber)
+        .title('Player #' + session.userData.playerDataArray[playerIndex].playerNumber + " " + session.userData.playerDataArray[playerIndex].playerName )
         .subtitle(session.userData.playerDataArray[playerIndex].comments)
         .buttons([
             builder.CardAction.imBack(session, "updateTechnicalSkills"+session.userData.playerDataArray[playerIndex].playerNumber, "Technical Skills: " + session.userData.playerDataArray[playerIndex].technicalSkills ),
@@ -95,10 +91,59 @@ bot.dialog('mainNavigationCarousel', function (session) {
     session.userData.playerDisplayArray.forEach(function(element, index) {
             msg.addAttachment(createPlayerHeroCard(session,element));
         });
-    console.log(session.userData.playerDataArray);
     session.send(msg);
     session.endDialog(); //should never get called
 });
+
+// Dialog to select date 
+bot.dialog('selectDate', [
+    function (session) {
+        builder.Prompts.time(session, "Please select Tryout date");
+    },
+    function (session, results) {
+        session.userData.tryoutDate = builder.EntityRecognizer.resolveTime([results.response]).toISOString().slice(0,10);
+        if (session.userData.tryoutDate && session.userData.tryoutAgeGroup && session.userData.tryoutGender) {
+            session.userData.playerDataArray = fetchPlayerList(session.userData.tryoutDate,
+                session.userData.tryoutAgeGroup,session.userData.tryoutGender);
+            session.userData.playerDisplayArray = [];
+         }
+        session.beginDialog('mainNavigationCarousel').endDialog();
+    }
+]).triggerAction({ matches: /selectDate/i });
+
+// Dialog to select Age Group 
+bot.dialog('selectAgeGroup', [
+    function (session) {
+        builder.Prompts.choice(session, "Please select age group", "U10|U11|U12|U13|U14|U15|U16|U17|U18|U19", {listStyle:3});
+    },
+    function (session, results) {
+        session.userData.tryoutAgeGroup = results.response.entity;
+        if (session.userData.tryoutDate && session.userData.tryoutAgeGroup && session.userData.tryoutGender) {
+            session.userData.playerDataArray = fetchPlayerList(session.userData.tryoutDate,
+                session.userData.tryoutAgeGroup,session.userData.tryoutGender);
+            session.userData.playerDisplayArray = [];
+          }
+        session.beginDialog('mainNavigationCarousel').endDialog();
+    }
+]).triggerAction({ matches: /selectAgeGroup/i });
+
+// Dialog to select Age Group 
+bot.dialog('selectGender', [
+    function addToPlayerDataArray(newPlayerData){
+        session.userData.playerDataArray.push(newPlayerData);
+    },
+    function (session) {
+        builder.Prompts.choice(session, "Please select gender", "Boys|Girls", {listStyle:3});
+    },
+    function (session, results) {
+        session.userData.tryoutGender = results.response.entity;
+        if (session.userData.tryoutDate && session.userData.tryoutAgeGroup && session.userData.tryoutGender) {
+            fetchPlayerList(session, addToPlayerDataArray);
+        }
+        session.beginDialog('mainNavigationCarousel').endDialog();
+    }
+]).triggerAction({ matches: /selectGender/i });
+
 
 // Dialog to select player 
 bot.dialog('selectPlayer', [
