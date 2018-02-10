@@ -2,6 +2,10 @@ var builder = require('botbuilder');
 var azure = require('botbuilder-azure');
 var restify = require('restify');
 
+// var Connection = require('tedious').Connection; 
+// var Request = require('tedious').Request  
+// var TYPES = require('tedious').TYPES;  
+
 
 var sqlConfig = require('./config');
 // var trackingAdaptiveCard = require('./adaptiveCard');
@@ -14,7 +18,7 @@ var connector = new builder.ChatConnector({
     appPassword: process.env.MICROSOFT_APP_PASSWORD
 });
 
-function playerData() {
+function PlayerData() {
     this.timestamp = '';
     this.playerNumber = 0;
     this.playerName = 'Unknown';
@@ -26,10 +30,7 @@ function playerData() {
     this.display = true;
 }
 
-
-
-
-var currentPlayerData = new playerData;
+var currentPlayerData = new PlayerData;
 
 currentPlayerData.playerNumber = 7;
 currentPlayerData.playerName = 'Tom Honeybone';
@@ -51,6 +52,9 @@ var bot = new builder.UniversalBot(connector, function (session) {
 
 });
 // }).set('storage', sqlStorage);
+
+
+
 
 //dialog to display player and game details
 bot.dialog('mainNavigationCarousel', function (session) {
@@ -129,13 +133,17 @@ bot.dialog('selectAgeGroup', [
 
 // Dialog to select Age Group 
 bot.dialog('selectGender', [
-    function addToPlayerDataArray(newPlayerData){
-        session.userData.playerDataArray.push(newPlayerData);
-    },
     function (session) {
+
         builder.Prompts.choice(session, "Please select gender", "Boys|Girls", {listStyle:3});
     },
     function (session, results) {
+        function addToPlayerDataArray(newPlayerData){
+            console.log("addToPlayerDataArray callback called" + newPlayerData);
+            // globalPlayerDataArray.push(newPlayerData);
+            session.userData.playerDataArray.push(newPlayerData);
+        };
+
         session.userData.tryoutGender = results.response.entity;
         if (session.userData.tryoutDate && session.userData.tryoutAgeGroup && session.userData.tryoutGender) {
             fetchPlayerList(session, addToPlayerDataArray);
@@ -315,3 +323,4 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
 
 
 server.post('/api/messages', connector.listen());
+

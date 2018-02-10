@@ -5,7 +5,7 @@ var TYPES = require('tedious').TYPES;
 
 
 
-function playerData() {
+function PlayerData() {
     this.timestamp = '';
     this.playerNumber = 0;
     this.playerName = '';
@@ -31,8 +31,8 @@ function playerData() {
 
 module.exports = function fetchPlayerList (session, addNewPlayerToPlayerDataArray) {
     console.log('Connecting to SQL');
-    session.userData.playerDisplayArray = [];
-    session.userData.playerDataArray = [];
+    // session.userData.playerDisplayArray = [];
+    // session.userData.playerDataArray = [];
     //initialize SQL connection
     var connection = new Connection(config);  
     //when connection comes up 
@@ -41,14 +41,14 @@ module.exports = function fetchPlayerList (session, addNewPlayerToPlayerDataArra
             console.log(err); 
         } else {
             //if successful execute insert
-            console.log("Connected to SQL"); 
+            console.log("SQL connection successful"); 
             sqlRequestString = createSQLRequest(session.userData.tryoutDate, session.userData.tryoutAgeGroup, session.userData.tryoutGender);
             console.log(sqlRequestString);
-            executeSQLRequest(sqlRequestString);
+            executeSQLRequest(session, sqlRequestString);
         }
 
     }); 
-    function executeSQLRequest(sqlString) {
+    function executeSQLRequest(session, sqlString) {
         console.log('Executing SQL Request');
         var retrievedData = [];
         request = new Request(sqlString, function(err) {  
@@ -60,7 +60,7 @@ module.exports = function fetchPlayerList (session, addNewPlayerToPlayerDataArra
 
     //unpack data from SQL query and put it in an array of objects
         request.on('row', function(columns) { 
-            var retrievedData = new playerData;
+            var retrievedData = new PlayerData;
             columns.forEach(function(column) { 
                 if (column.value === null){
                     playerData.playerNumber = "unknown";
@@ -75,17 +75,13 @@ module.exports = function fetchPlayerList (session, addNewPlayerToPlayerDataArra
                     }
                 }
             }); 
-
-
- 
             // session.userData.playerDataArray.push(retrievedData);
             addNewPlayerToPlayerDataArray(retrievedData);
-            console.log(session.userData.playerDataArray);
+            console.log("New player added" + session.userData.playerDataArray);
         });     
 
         request.on('requestCompleted', function () { 
             console.log('returning fetchedPlayerList');
-            
             return;
         });
         connection.execSql(request);  
@@ -97,7 +93,7 @@ function createSQLRequest(date, ageGroup, gender) {
     sqlRequestString += "tryoutDate='" + date;
     sqlRequestString += "'AND playerAgeGroup='" + ageGroup;
     sqlRequestString += "'AND playerGender='" + gender + "'";
-    console.log(sqlRequestString);
+    // console.log(sqlRequestString);
     return sqlRequestString;
 }
 // CREATE TABLE [dbo].[topFCPlayerList]
