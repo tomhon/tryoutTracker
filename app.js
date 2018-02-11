@@ -134,6 +134,7 @@ bot.dialog('selectAgeGroup', [
                 session.userData.tryoutAgeGroup,session.userData.tryoutGender);
             session.userData.playerDisplayArray = [];
           }
+        session.save();
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
 ]).triggerAction({ matches: /selectAgeGroup/i });
@@ -150,11 +151,12 @@ bot.dialog('selectGender', [
             // globalPlayerDataArray.push(newPlayerData);
             session.userData.playerDataArray.push(newPlayerData);
         };
-
+        
         session.userData.tryoutGender = results.response.entity;
         if (session.userData.tryoutDate && session.userData.tryoutAgeGroup && session.userData.tryoutGender) {
             fetchPlayerList(session, addToPlayerDataArray);
         }
+        session.save();
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
 ]).triggerAction({ matches: /selectGender/i });
