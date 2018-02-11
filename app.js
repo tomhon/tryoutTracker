@@ -42,16 +42,19 @@ currentPlayerData.comments = 'Terrific ball control, excellent set pieces, needs
 
 var date;
 
+var inMemoryStorage = new builder.MemoryBotStorage();
+
 var bot = new builder.UniversalBot(connector, function (session) {
-    session.userData.playerDataArray = Array();
-    session.userData.playerDataArray.push(currentPlayerData);
-    console.log(session.userData.playerDataArray);
-    session.userData.playerDisplayArray = Array();
-    session.userData.playerDisplayArray.push(0);
+    // console.log('WARNING: playerDataArray cleared');
+    if (session.userData.playerDataArray == undefined) { session.userData.playerDataArray = Array()};
+    if (session.userData.playerDisplayArray == undefined) { session.userData.playerDisplayArray = Array()};
+    // session.userData.playerDataArray.push(currentPlayerData);
+    console.log('PlayerDataArray = ' + session.userData.playerDataArray); //context Array[1]
+    // session.userData.playerDisplayArray.push(0);
     session.beginDialog('mainNavigationCarousel').endDialog();
 
-});
-// }).set('storage', sqlStorage);
+}).set('storage', sqlStorage);
+// }).set('storage', inMemoryStorage);
 
 
 
@@ -86,17 +89,19 @@ bot.dialog('mainNavigationCarousel', function (session) {
         ])
         return playerHeroCard;
     }
-    msg.addAttachment(setupHeroCard);
+    msg.addAttachment(setupHeroCard); //context Array(1)
     //add a new heroCard for each player set to display - display in reverse order
     // session.userData.playerDataArray.forEach(function(element, index) {
     //     if (session.userData.playerDataArray[index].display) {
     //         msg.addAttachment(createPlayerHeroCard(session,index));
     //     }
+    if (!session.userData.playerDisplayArray == undefined) {
     session.userData.playerDisplayArray.forEach(function(element, index) {
             msg.addAttachment(createPlayerHeroCard(session,element));
         });
+    }
     session.send(msg);
-    session.endDialog(); //should never get called
+    session.endDialog();
 });
 
 // Dialog to select date 
@@ -111,6 +116,7 @@ bot.dialog('selectDate', [
                 session.userData.tryoutAgeGroup,session.userData.tryoutGender);
             session.userData.playerDisplayArray = [];
          }
+        session.save();
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
 ]).triggerAction({ matches: /selectDate/i });
@@ -119,6 +125,7 @@ bot.dialog('selectDate', [
 bot.dialog('selectAgeGroup', [
     function (session) {
         builder.Prompts.choice(session, "Please select age group", "U10|U11|U12|U13|U14|U15|U16|U17|U18|U19", {listStyle:3});
+        console.log('Prompts done');
     },
     function (session, results) {
         session.userData.tryoutAgeGroup = results.response.entity;
@@ -133,7 +140,7 @@ bot.dialog('selectAgeGroup', [
 
 // Dialog to select Age Group 
 bot.dialog('selectGender', [
-    function (session) {
+    function (session, results) {
 
         builder.Prompts.choice(session, "Please select gender", "Boys|Girls", {listStyle:3});
     },
@@ -165,7 +172,7 @@ bot.dialog('selectPlayer', [
             return session.userData.playerDataArray[index].playerNumber==results.response});
         console.log('Index to Display= ' + indexToDisplay);
         if (indexToDisplay == -1) 
-            {   var newPlayerData = new playerData;
+            {   var newPlayerData = new PlayerData;
                 newPlayerData.playerNumber = results.response;
                 date = new Date();
                 newPlayerData.timestamp = date.toISOString();

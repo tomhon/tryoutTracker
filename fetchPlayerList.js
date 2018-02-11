@@ -31,10 +31,10 @@ function PlayerData() {
 
 module.exports = function fetchPlayerList (session, addNewPlayerToPlayerDataArray) {
     console.log('Connecting to SQL');
-    // session.userData.playerDisplayArray = [];
-    // session.userData.playerDataArray = [];
+    session.userData.playerDisplayArray = [];
+    session.userData.playerDataArray = [];
     //initialize SQL connection
-    var connection = new Connection(config);  
+    var connection = new Connection(config);  //global context
     //when connection comes up 
     connection.on('connect', function(err) {  
         if (err) {
@@ -43,12 +43,12 @@ module.exports = function fetchPlayerList (session, addNewPlayerToPlayerDataArra
             //if successful execute insert
             console.log("SQL connection successful"); 
             sqlRequestString = createSQLRequest(session.userData.tryoutDate, session.userData.tryoutAgeGroup, session.userData.tryoutGender);
-            console.log(sqlRequestString);
-            executeSQLRequest(session, sqlRequestString);
+            console.log(sqlRequestString); //connection context
+            executeSQLRequest(sqlRequestString);
         }
 
     }); 
-    function executeSQLRequest(session, sqlString) {
+    function executeSQLRequest(sqlString) {
         console.log('Executing SQL Request');
         var retrievedData = [];
         request = new Request(sqlString, function(err) {  
@@ -81,7 +81,7 @@ module.exports = function fetchPlayerList (session, addNewPlayerToPlayerDataArra
         });     
 
         request.on('requestCompleted', function () { 
-            console.log('returning fetchedPlayerList');
+            console.log('returning fetchedPlayerList'); //request context
             return;
         });
         connection.execSql(request);  
