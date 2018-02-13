@@ -13,10 +13,21 @@ var fetchPlayerList = require("./fetchPlayerList");
 
 var sqlClient = new azure.AzureSqlClient(sqlConfig);
 var sqlStorage = new azure.AzureBotStorage({ gzipData: false }, sqlClient);
+
+// Table storage
+var tableConfig = require('./tableConfig');
+var tableName = tableConfig.tableName; // You define
+var storageName = tableConfig.storageName; // Obtain from Azure Portal
+var storageKey = tableConfig.storageKey; // Obtain from Azure Portal
+var azureTableClient = new azure.AzureTableClient(tableName, storageName, storageKey);
+var tableStorage = new azure.AzureBotStorage({gzipData: false}, azureTableClient);
+
 var connector = new builder.ChatConnector({
     appId: process.env.MICROSOFT_APP_ID,
     appPassword: process.env.MICROSOFT_APP_PASSWORD
 });
+
+
 
 function PlayerData() {
     this.timestamp = '';
@@ -53,9 +64,9 @@ var bot = new builder.UniversalBot(connector, function (session) {
     // session.userData.playerDisplayArray.push(0);
     session.beginDialog('mainNavigationCarousel').endDialog();
 
-}).set('storage', sqlStorage);
+}).set('storage', tableStorage);
+// }).set('storage', sqlStorage); //doesn't work!!!
 // }).set('storage', inMemoryStorage);
-
 
 
 
@@ -70,7 +81,7 @@ bot.dialog('mainNavigationCarousel', function (session) {
         builder.CardAction.imBack(session, "selectPlayer", "Select Player#" ),
         builder.CardAction.imBack(session, "selectDate", "Tryout Date: " + session.userData.tryoutDate ),
         builder.CardAction.imBack(session, "selectAgeGroup", "Age Group: " + session.userData.tryoutAgeGroup ),
-        builder.CardAction.imBack(session, "selectGender", "Gender: " + session.userData.tryoutGender ),
+        builder.CardAction.imBack(session, "selectGender", "Gender: " + session.userData.tryoutGender),
         builder.CardAction.imBack(session, "storeData", "Tryout Complete - Save Results" )
     ]);
 
@@ -95,7 +106,7 @@ bot.dialog('mainNavigationCarousel', function (session) {
     //     if (session.userData.playerDataArray[index].display) {
     //         msg.addAttachment(createPlayerHeroCard(session,index));
     //     }
-    if (!session.userData.playerDisplayArray == undefined) {
+    if (!(session.userData.playerDisplayArray == undefined)) {
     session.userData.playerDisplayArray.forEach(function(element, index) {
             msg.addAttachment(createPlayerHeroCard(session,element));
         });
@@ -112,11 +123,8 @@ bot.dialog('selectDate', [
     function (session, results) {
         session.userData.tryoutDate = builder.EntityRecognizer.resolveTime([results.response]).toISOString().slice(0,10);
         if (session.userData.tryoutDate && session.userData.tryoutAgeGroup && session.userData.tryoutGender) {
-            session.userData.playerDataArray = fetchPlayerList(session.userData.tryoutDate,
-                session.userData.tryoutAgeGroup,session.userData.tryoutGender);
-            session.userData.playerDisplayArray = [];
-         }
-        session.save();
+            fetchPlayerList(session);
+        }
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
 ]).triggerAction({ matches: /selectDate/i });
@@ -130,11 +138,8 @@ bot.dialog('selectAgeGroup', [
     function (session, results) {
         session.userData.tryoutAgeGroup = results.response.entity;
         if (session.userData.tryoutDate && session.userData.tryoutAgeGroup && session.userData.tryoutGender) {
-            session.userData.playerDataArray = fetchPlayerList(session.userData.tryoutDate,
-                session.userData.tryoutAgeGroup,session.userData.tryoutGender);
-            session.userData.playerDisplayArray = [];
-          }
-        session.save();
+            fetchPlayerList(session);
+        }
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
 ]).triggerAction({ matches: /selectAgeGroup/i });
@@ -146,17 +151,13 @@ bot.dialog('selectGender', [
         builder.Prompts.choice(session, "Please select gender", "Boys|Girls", {listStyle:3});
     },
     function (session, results) {
-        function addToPlayerDataArray(newPlayerData){
-            console.log("addToPlayerDataArray callback called" + newPlayerData);
-            // globalPlayerDataArray.push(newPlayerData);
-            session.userData.playerDataArray.push(newPlayerData);
-        };
+
         
         session.userData.tryoutGender = results.response.entity;
+        session.userData.dialogContext = this;
         if (session.userData.tryoutDate && session.userData.tryoutAgeGroup && session.userData.tryoutGender) {
-            fetchPlayerList(session, addToPlayerDataArray);
+            fetchPlayerList(session);
         }
-        session.save();
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
 ]).triggerAction({ matches: /selectGender/i });
@@ -184,6 +185,7 @@ bot.dialog('selectPlayer', [
                 console.log('new playerTracking object added');
             };
         session.userData.playerDisplayArray.splice(0,0,indexToDisplay);
+        session.save();
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
 ]).triggerAction({ matches: /selectPlayer/i });

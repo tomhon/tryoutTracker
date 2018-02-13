@@ -3,12 +3,10 @@ var Connection = require('tedious').Connection;
 var Request = require('tedious').Request  
 var TYPES = require('tedious').TYPES;  
 
-
-
 function PlayerData() {
     this.timestamp = '';
     this.playerNumber = 0;
-    this.playerName = '';
+    this.playerName = 'New Player';
     this.technicalSkills = 0;
     this.gameSkills = 0;
     this.athleticism= 0;
@@ -16,27 +14,20 @@ function PlayerData() {
     this.comments= '';
 }
 
-
-
-// var currentPlayerData = new playerData;
-
-    //     currentPlayerData.playerNumber = 14;
-    //     currentPlayerData.playerName = 'Poppy Honeybone';
-    //     currentPlayerData.technicalSkills = 4.5;
-    //     currentPlayerData.gameSkills = 3.5;
-    //     currentPlayerData.athleticism = 4.0;
-    //     currentPlayerData.intangibles = 3.0;
-    //     currentPlayerData.comments = 'Terrific ball control, excellent set pieces, needs work on communicating with team mates';
-    // fetchedPlayerDataArray.push(currentPlayerData);
-
-module.exports = function fetchPlayerList (session, addNewPlayerToPlayerDataArray) {
+module.exports = function fetchPlayerList(session) {
     console.log('Connecting to SQL');
+    function localPlayerDataArray(player) {
+        session.userData.playerDataArray.push(player)
+    };
     session.userData.playerDisplayArray = [];
     session.userData.playerDataArray = [];
+    localPlayerDataArray(new PlayerData());
+ 
     //initialize SQL connection
     var connection = new Connection(config);  //global context
     //when connection comes up 
-    connection.on('connect', function(err) {  
+    connection.on('connect', function(err) {
+        // test code - delete
         if (err) {
             console.log(err); 
         } else {
@@ -45,46 +36,44 @@ module.exports = function fetchPlayerList (session, addNewPlayerToPlayerDataArra
             sqlRequestString = createSQLRequest(session.userData.tryoutDate, session.userData.tryoutAgeGroup, session.userData.tryoutGender);
             console.log(sqlRequestString); //connection context
             executeSQLRequest(sqlRequestString);
+            connection.execSql(request); 
         }
 
     }); 
     function executeSQLRequest(sqlString) {
         console.log('Executing SQL Request');
-        var retrievedData = [];
-        request = new Request(sqlString, function(err) {  
+        request = new Request(sqlString, function(err) {
+ 
                 if (err) {  
                 console.log('SQL request error' + err);
                 console.log(sqlString);
-                }  
-            });  
-
+                    }  
+                });  
     //unpack data from SQL query and put it in an array of objects
         request.on('row', function(columns) { 
-            var retrievedData = new PlayerData;
+            console.log('From request.on row>>> session.userData.tryoutDate = ' + session.userData.tryoutDate )
+            var retrievedPlayer = new PlayerData;
             columns.forEach(function(column) { 
                 if (column.value === null){
                     playerData.playerNumber = "unknown";
                 } else {
                 switch(column.metadata.colName) {
                     case 'playerNumber':
-                        {retrievedData.playerNumber = column.value;
+                        {retrievedPlayer.playerNumber = column.value;
                         break;}
                     case 'playerName':
-                        {retrievedData.playerName = column.value;
+                        {retrievedPlayer.playerName = column.value;
                         break;}
                     }
                 }
             }); 
-            // session.userData.playerDataArray.push(retrievedData);
-            addNewPlayerToPlayerDataArray(retrievedData);
-            console.log("New player added" + session.userData.playerDataArray);
+            localPlayerDataArray(retrievedPlayer);
+            console.log("Callback added new player " + retrievedPlayer.playerNumber);
         });     
-
         request.on('requestCompleted', function () { 
             console.log('returning fetchedPlayerList'); //request context
             return;
         });
-        connection.execSql(request);  
     }
 };  
 
@@ -93,7 +82,6 @@ function createSQLRequest(date, ageGroup, gender) {
     sqlRequestString += "tryoutDate='" + date;
     sqlRequestString += "'AND playerAgeGroup='" + ageGroup;
     sqlRequestString += "'AND playerGender='" + gender + "'";
-    // console.log(sqlRequestString);
     return sqlRequestString;
 }
 // CREATE TABLE [dbo].[topFCPlayerList]
