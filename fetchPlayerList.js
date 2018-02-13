@@ -25,6 +25,8 @@ module.exports = function fetchPlayerList(session) {
  
     //initialize SQL connection
     var connection = new Connection(config);  //global context
+
+    
     //when connection comes up 
     connection.on('connect', function(err) {
         // test code - delete
