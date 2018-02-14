@@ -29,6 +29,8 @@ var connector = new builder.ChatConnector({
 
 
 
+
+
 function PlayerData() {
     this.timestamp = '';
     this.playerNumber = 0;
@@ -56,8 +58,10 @@ var date;
 var inMemoryStorage = new builder.MemoryBotStorage();
 
 var bot = new builder.UniversalBot(connector, function (session) {
-    // console.log('WARNING: playerDataArray cleared');
-    if (session.userData.playerDataArray == undefined) { session.userData.playerDataArray = Array()};
+;
+    if (session.userData.playerDataArray == undefined) {
+        console.log('WARNING: playerDataArray cleared'); 
+        session.userData.playerDataArray = Array()};
     if (session.userData.playerDisplayArray == undefined) { session.userData.playerDisplayArray = Array()};
     // session.userData.playerDataArray.push(currentPlayerData);
     console.log('PlayerDataArray = ' + session.userData.playerDataArray); //context Array[1]
@@ -72,6 +76,10 @@ var bot = new builder.UniversalBot(connector, function (session) {
 
 //dialog to display player and game details
 bot.dialog('mainNavigationCarousel', function (session) {
+
+
+    
+    console.log(session.userData.playerDataArray);
     var msg = new builder.Message(session);
     msg.attachmentLayout(builder.AttachmentLayout.carousel);
     setupHeroCard = new builder.HeroCard(session)
@@ -162,6 +170,28 @@ bot.dialog('selectGender', [
     }
 ]).triggerAction({ matches: /selectGender/i });
 
+// Dialog to get data 
+bot.dialog('fetchData', [
+    function (session) {
+        var dummySession = Array ();
+        dummySession.userData = {
+            playerDataArray: [],
+            tryoutDate: '02/09/2018',
+            tryoutGender: 'Boys',
+            tryoutAgeGroup: 'U14'
+        };
+        fetchPlayerList(session);
+        session.beginDialog('mainNavigationCarousel').endDialog();
+    }
+]).triggerAction({ matches: /fetchData/i });
+
+// Dialog to display data 
+bot.dialog('displayData', [
+    function (session) {
+        session.send('displayData');
+        session.beginDialog('mainNavigationCarousel').endDialog();
+    }
+]).triggerAction({ matches: /displayData/i });
 
 // Dialog to select player 
 bot.dialog('selectPlayer', [

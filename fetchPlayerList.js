@@ -6,7 +6,7 @@ var TYPES = require('tedious').TYPES;
 function PlayerData() {
     this.timestamp = '';
     this.playerNumber = 0;
-    this.playerName = 'New Player';
+    this.playerName = 'Kelsey';
     this.technicalSkills = 0;
     this.gameSkills = 0;
     this.athleticism= 0;
@@ -16,12 +16,15 @@ function PlayerData() {
 
 module.exports = function fetchPlayerList(session) {
     console.log('Connecting to SQL');
-    function localPlayerDataArray(player) {
-        session.userData.playerDataArray.push(player)
-    };
+    // function localPlayerDataArray(player) {
+    //     session.userData.playerDataArray.push(player)
+    // };
     session.userData.playerDisplayArray = [];
     session.userData.playerDataArray = [];
-    localPlayerDataArray(new PlayerData());
+    session.userData.playerDataArray.push(new PlayerData());
+
+
+    
  
     //initialize SQL connection
     var connection = new Connection(config);  //global context
@@ -49,8 +52,10 @@ module.exports = function fetchPlayerList(session) {
                 if (err) {  
                 console.log('SQL request error' + err);
                 console.log(sqlString);
-                    }  
+                    } 
+                return; 
                 });  
+            
     //unpack data from SQL query and put it in an array of objects
         request.on('row', function(columns) { 
             console.log('From request.on row>>> session.userData.tryoutDate = ' + session.userData.tryoutDate )
@@ -69,9 +74,13 @@ module.exports = function fetchPlayerList(session) {
                     }
                 }
             }); 
-            localPlayerDataArray(retrievedPlayer);
+            session.userData.playerDataArray.push(retrievedPlayer);
+
+            console.log(session.userData.playerDataArray);
             console.log("Callback added new player " + retrievedPlayer.playerNumber);
-        });     
+            return;
+        }); 
+
         request.on('requestCompleted', function () { 
             console.log('returning fetchedPlayerList'); //request context
             return;

@@ -5,7 +5,7 @@ var async = require('async');
 
 // Create connection to database
 var config = {
-  userName: 'sa', // update me
+  userName: 'ScoreGoals', // update me
   password: 'your_password', // update me
   server: 'localhost',
   options: {
