@@ -6,10 +6,10 @@ var async = require('async');
 // Create connection to database
 var config = {
   userName: 'ScoreGoals', // update me
-  password: 'your_password', // update me
-  server: 'localhost',
+  password: 'Russia2018', // update me
+  server: 'tryouttrackersqlserver.database.windows.net',
   options: {
-    database: 'SampleDB'
+    database: 'tryoutTrackerSQLDB'
   }
 }
 
@@ -61,25 +61,7 @@ function Update(name, location, callback) {
     connection.execSql(request);
 }
 
-function Delete(name, callback) {
-    console.log("Deleting '" + name + "' from Table...");
 
-    // Delete the employee record requested
-    request = new Request(
-        'DELETE FROM TestSchema.Employees WHERE Name = @Name;',
-        function(err, rowCount, rows) {
-        if (err) {
-            callback(err);
-        } else {
-            console.log(rowCount + ' row(s) deleted');
-            callback(null);
-        }
-        });
-    request.addParameter('Name', TYPES.NVarChar, name);
-
-    // Execute SQL statement
-    connection.execSql(request);
-}
 
 function Read(callback) {
     console.log('Reading rows from the Table...');
