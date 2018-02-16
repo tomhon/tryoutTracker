@@ -1,6 +1,10 @@
 var builder = require('botbuilder');
 var azure = require('botbuilder-azure');
 var restify = require('restify');
+var config = require("./config");
+var Connection = require('tedious').Connection; 
+var Request = require('tedious').Request  
+var TYPES = require('tedious').TYPES; 
 
 // var Connection = require('tedious').Connection; 
 // var Request = require('tedious').Request  
@@ -9,7 +13,8 @@ var restify = require('restify');
 
 var sqlConfig = require('./config');
 // var trackingAdaptiveCard = require('./adaptiveCard');
-var fetchPlayerList = require("./fetchPlayerList");
+
+// var fetchPlayerList = require("./fetchPlayerList");
 
 var sqlClient = new azure.AzureSqlClient(sqlConfig);
 var sqlStorage = new azure.AzureBotStorage({ gzipData: false }, sqlClient);
@@ -78,7 +83,7 @@ var bot = new builder.UniversalBot(connector, function (session) {
 bot.dialog('mainNavigationCarousel', function (session) {
 
 
-    
+    // session.userData.playerDataArray = localPlayerDataArray;
     console.log(session.userData.playerDataArray);
     var msg = new builder.Message(session);
     msg.attachmentLayout(builder.AttachmentLayout.carousel);
@@ -131,7 +136,8 @@ bot.dialog('selectDate', [
     function (session, results) {
         session.userData.tryoutDate = builder.EntityRecognizer.resolveTime([results.response]).toISOString().slice(0,10);
         if (session.userData.tryoutDate && session.userData.tryoutAgeGroup && session.userData.tryoutGender) {
-            fetchPlayerList(session);
+            loadPlayerDataArray(session);
+            console.log(session.userData.playerDataArray);
         }
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
@@ -146,7 +152,8 @@ bot.dialog('selectAgeGroup', [
     function (session, results) {
         session.userData.tryoutAgeGroup = results.response.entity;
         if (session.userData.tryoutDate && session.userData.tryoutAgeGroup && session.userData.tryoutGender) {
-            fetchPlayerList(session);
+            loadPlayerDataArray(session);
+            console.log(session.userData.playerDataArray);
         }
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
@@ -164,7 +171,8 @@ bot.dialog('selectGender', [
         session.userData.tryoutGender = results.response.entity;
         session.userData.dialogContext = this;
         if (session.userData.tryoutDate && session.userData.tryoutAgeGroup && session.userData.tryoutGender) {
-            fetchPlayerList(session);
+            loadPlayerDataArray(session);
+            console.log(session.userData.playerDataArray);
         }
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
@@ -364,4 +372,89 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
 
 
 server.post('/api/messages', connector.listen());
+
+
+function loadPlayerDataArray (session) {
+    session.userData.playerDataArray = [];
+    session.userData.playerDisplayArray = [];
+    localPlayerDataArray.forEach(function(item){
+        if (session.userData.tryoutDate == item.tryoutDate 
+            && session.userData.tryoutAgeGroup == item.playerAgeGroup 
+            && session.userData.tryoutGender == item.playerGender) 
+            {
+                session.userData.playerDataArray.push(item);
+            }
+    })
+}
+
+var localPlayerDataArray = Array ();
+
+var connection = new Connection(config);  //global context
+
+//when connection comes up 
+connection.on('connect', function(err) {
+    // test code - delete
+    if (err) {
+        console.log(err); 
+    } else {
+        //if successful execute insert
+        console.log("SQL connection successful"); 
+        // sqlRequestString = createSQLRequest(session.userData.tryoutDate, session.userData.tryoutAgeGroup, session.userData.tryoutGender);
+        sqlRequestString="Select * from topFCPlayerList"
+        console.log(sqlRequestString); //connection context
+        executeSQLRequest(sqlRequestString);
+        connection.execSql(request); 
+    }
+
+}); 
+
+function executeSQLRequest(sqlString) {
+    console.log('Executing SQL Request');
+    request = new Request(sqlString, function(err) {
+            if (err) {  
+            console.log('SQL request error' + err);
+            console.log(sqlString);
+                } 
+            return; 
+            });  
+            
+    //unpack data from SQL query and put it in an array of objects
+    request.on('row', function(columns) { 
+        var retrievedPlayer = new PlayerData;
+        columns.forEach(function(column) { 
+            if (column.value === null){
+                playerData.playerNumber = "unknown";
+            } else {
+            switch(column.metadata.colName) {
+                case 'playerNumber':
+                    {retrievedPlayer.playerNumber = column.value;
+                    break;}
+                case 'playerName':
+                    {retrievedPlayer.playerName = column.value;
+                    break;}
+                case 'tryoutDate':
+                    {retrievedPlayer.tryoutDate = column.value;
+                    break;}
+                case 'playerAgeGroup':
+                    {retrievedPlayer.playerAgeGroup = column.value;
+                    break;}
+                case 'playerGender':
+                    {retrievedPlayer.playerGender = column.value;
+                    break;}
+                }
+            }
+        }); 
+        localPlayerDataArray.push(retrievedPlayer);
+        console.log("Callback added new player " + retrievedPlayer.playerNumber);
+        return;
+    }); 
+
+    request.on('requestCompleted', function () { 
+        console.log('returning fetchedPlayerList'); //request context
+        console.log(localPlayerDataArray);
+        return;
+    });
+};
+
+
 
