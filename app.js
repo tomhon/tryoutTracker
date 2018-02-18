@@ -93,7 +93,7 @@ bot.dialog('mainNavigationCarousel', function (session) {
     .title('Select Players to Track')
     .subtitle("Select Date, Age Group & Gender to load Player Data. Then select individual players to track.")
     .buttons([
-        builder.CardAction.imBack(session, "selectPlayer", "Select Player#" ),
+        builder.CardAction.imBack(session, "selectPlayer", "Display Player#" ),
         builder.CardAction.imBack(session, "selectDate", "Tryout Date: " + session.userData.tryoutDate ),
         builder.CardAction.imBack(session, "selectAgeGroup", "Age Group: " + session.userData.tryoutAgeGroup ),
         builder.CardAction.imBack(session, "selectGender", "Gender: " + session.userData.tryoutGender),
@@ -111,7 +111,7 @@ bot.dialog('mainNavigationCarousel', function (session) {
             builder.CardAction.imBack(session, "updateAthleticism"+session.userData.playerDataArray[playerIndex].playerNumber, "Athleticism: " + session.userData.playerDataArray[playerIndex].athleticism ),
             builder.CardAction.imBack(session, "updateIntangibles"+session.userData.playerDataArray[playerIndex].playerNumber, "Intangibles: " + session.userData.playerDataArray[playerIndex].intangibles ),
             builder.CardAction.imBack(session, "updateComments"+session.userData.playerDataArray[playerIndex].playerNumber, "Add Comments" ),
-            builder.CardAction.imBack(session, "closePlayer"+session.userData.playerDataArray[playerIndex].playerNumber, "Close this Player" ),
+            builder.CardAction.imBack(session, "closePlayer"+session.userData.playerDataArray[playerIndex].playerNumber, "Hide this Player" ),
         ])
         return playerHeroCard;
     }
@@ -153,10 +153,10 @@ bot.dialog('storeData', [
 // Dialog to select date 
 bot.dialog('selectDate', [
     function (session) {
-        builder.Prompts.confirm(session, "This deletes all the data you've entered. Are you sure you want to proceed?");
+        builder.Prompts.choice(session, "This deletes all the data you've entered. Are you sure you want to proceed?", "Yes|No", {listStyle:3});
     },
     function (session, results, next) {
-        if (results.response) {
+        if (results.response.entity == 'Yes') {
             builder.Prompts.time(session, "Please select Tryout date");
         } else {
             next();
@@ -177,10 +177,10 @@ bot.dialog('selectDate', [
 // Dialog to select Age Group 
 bot.dialog('selectAgeGroup', [
     function (session) {
-        builder.Prompts.confirm(session, "This deletes all the data you've entered. Are you sure you want to proceed?");
+        builder.Prompts.choice(session, "This deletes all the data you've entered. Are you sure you want to proceed?", "Yes|No", {listStyle:3});
     },
     function (session, results, next) {
-        if (results.response) {
+        if (results.response.entity == 'Yes') {
             builder.Prompts.choice(session, "Please select age group", "U10|U11|U12|U13|U14|U15|U16|U17|U18|U19", {listStyle:3});
         } else {
             next();
@@ -201,10 +201,10 @@ bot.dialog('selectAgeGroup', [
 // Dialog to select Age Group 
 bot.dialog('selectGender', [
     function (session) {
-        builder.Prompts.confirm(session, "This deletes all the data you've entered. Are you sure you want to proceed?");
+        builder.Prompts.choice(session, "This deletes all the data you've entered. Are you sure you want to proceed?", "Yes|No", {listStyle:3});
     },
     function (session, results, next) {
-        if (results.response) {
+        if (results.response.entity == 'Yes') {
             builder.Prompts.choice(session, "Please select gender", "Boys|Girls", {listStyle:3});
         } else {
             next()
@@ -302,10 +302,10 @@ bot.dialog('updateTechnicalSkills', [
             return session.userData.playerDataArray[index].playerNumber==parseInt(playerNumberToUpdate);
         });
         // console.log('Update Index' + indexToUpdate);
-        builder.Prompts.number(session, "Please enter new Technical Skills score (1-5)");
+        builder.Prompts.choice(session, "Please enter new Technical Skills score", "5.0|4.5|4.0|3.5|3.0|2.5|2.0|1.5|1.0|0.5|0.0", {listStyle:3});
     },
     function (session, results) {
-        session.userData.playerDataArray[indexToUpdate].technicalSkills = results.response;
+        session.userData.playerDataArray[indexToUpdate].technicalSkills = results.response.entity;
         var date = new Date();
         session.userData.playerDataArray[indexToUpdate].timestamp = date.toISOString();
         movePlayerToFrontOfDisplay(session,indexToUpdate);
@@ -334,10 +334,11 @@ bot.dialog('updateGameSkills', [
             return session.userData.playerDataArray[index].playerNumber==parseInt(playerNumberToUpdate);
         });
         // console.log('Update Index' + indexToUpdate);
-        builder.Prompts.number(session, "Please enter new Game Skills score (1-5)");
+        builder.Prompts.choice(session, "Please enter new Game Skills score", "5.0|4.5|4.0|3.5|3.0|2.5|2.0|1.5|1.0|0.5|0.0", {listStyle:3});
+        // builder.Prompts.number(session, "Please enter new Game Skills score (1-5)");
     },
     function (session, results) {
-        session.userData.playerDataArray[indexToUpdate].gameSkills = results.response;
+        session.userData.playerDataArray[indexToUpdate].gameSkills = results.response.entity;
         var date = new Date();
         session.userData.playerDataArray[indexToUpdate].timestamp = date.toISOString();
         movePlayerToFrontOfDisplay(session,indexToUpdate);
@@ -357,10 +358,11 @@ bot.dialog('updateAthleticism', [
             return session.userData.playerDataArray[index].playerNumber==parseInt(playerNumberToUpdate);
         });
         // console.log('Update Index' + indexToUpdate);
-        builder.Prompts.number(session, "Please enter new Athleticism score (1-5)");
+        builder.Prompts.choice(session, "Please enter new Athleticism score", "5.0|4.5|4.0|3.5|3.0|2.5|2.0|1.5|1.0|0.5|0.0", {listStyle:3});
+        // builder.Prompts.number(session, "Please enter new Athleticism score (1-5)");
     },
     function (session, results) {
-        session.userData.playerDataArray[indexToUpdate].athleticism = results.response;
+        session.userData.playerDataArray[indexToUpdate].athleticism = results.response.entity;
         var date = new Date();
         session.userData.playerDataArray[indexToUpdate].timestamp = date.toISOString();
         movePlayerToFrontOfDisplay(session,indexToUpdate);
@@ -380,10 +382,11 @@ bot.dialog('updateIntangibles', [
             return session.userData.playerDataArray[index].playerNumber==parseInt(playerNumberToUpdate);
         });
         // console.log('Update Index' + indexToUpdate);
-        builder.Prompts.number(session, "Please enter new Intangibles score (1-5)");
+        builder.Prompts.choice(session, "Please enter new Intangibles score", "5.0|4.5|4.0|3.5|3.0|2.5|2.0|1.5|1.0|0.5|0.0", {listStyle:3});
+        // builder.Prompts.number(session, "Please enter new Intangibles score (1-5)");
     },
     function (session, results) {
-        session.userData.playerDataArray[indexToUpdate].intangibles = results.response;
+        session.userData.playerDataArray[indexToUpdate].intangibles = results.response.entity;
         var date = new Date();
         session.userData.playerDataArray[indexToUpdate].timestamp = date.toISOString();
         movePlayerToFrontOfDisplay(session,indexToUpdate);
