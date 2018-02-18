@@ -37,7 +37,8 @@ var connector = new builder.ChatConnector({
 
 
 function PlayerData() {
-    this.timestamp = '';
+    var date = new Date();
+    this.timestamp = date.toISOString();
     this.playerNumber = 0;
     this.playerName = 'Unknown';
     this.technicalSkills = 0;
@@ -69,7 +70,7 @@ var bot = new builder.UniversalBot(connector, function (session) {
         session.userData.playerDataArray = Array()};
     if (session.userData.playerDisplayArray == undefined) { session.userData.playerDisplayArray = Array()};
     // session.userData.playerDataArray.push(currentPlayerData);
-    console.log('PlayerDataArray = ' + session.userData.playerDataArray); //context Array[1]
+    // console.log('PlayerDataArray = ' + session.userData.playerDataArray); //context Array[1]
     // session.userData.playerDisplayArray.push(0);
     session.beginDialog('mainNavigationCarousel').endDialog();
 
@@ -84,7 +85,7 @@ bot.dialog('mainNavigationCarousel', function (session) {
 
 
     // session.userData.playerDataArray = localPlayerDataArray;
-    console.log(session.userData.playerDataArray);
+    // console.log(session.userData.playerDataArray);
     var msg = new builder.Message(session);
     msg.attachmentLayout(builder.AttachmentLayout.carousel);
     setupHeroCard = new builder.HeroCard(session)
@@ -128,16 +129,45 @@ bot.dialog('mainNavigationCarousel', function (session) {
     session.endDialog();
 });
 
+var logTryoutData = require("./logTryoutData");
+
+// Dialog to select date 
+bot.dialog('storeData', [
+    function (session) {
+        builder.Prompts.confirm(session, "Are you sure you want to save your tryout tracking data?");
+    },
+    function (session, results) {
+        if (results.response) {
+            session.userData.tryoutComplete = true;
+            session.save();
+            logTryoutData(session.userData, session.message.user.name);
+        } else {
+
+        }
+        // session.userData.tryoutComplete = false;
+        session.beginDialog('mainNavigationCarousel').endDialog();
+    }
+]).triggerAction({ matches: /storeData/i });
+
 // Dialog to select date 
 bot.dialog('selectDate', [
     function (session) {
-        builder.Prompts.time(session, "Please select Tryout date");
+        builder.Prompts.confirm(session, "This deletes all the data you've entered. Are you sure you want to proceed?");
     },
-    function (session, results) {
+    function (session, results, next) {
+        if (results.response) {
+            builder.Prompts.time(session, "Please select Tryout date");
+        } else {
+            next();
+        }
+    },
+    function (session, results, next) {
+        if (results.response != undefined) {
         session.userData.tryoutDate = builder.EntityRecognizer.resolveTime([results.response]).toISOString().slice(0,10);
         if (session.userData.tryoutDate && session.userData.tryoutAgeGroup && session.userData.tryoutGender) {
             loadPlayerDataArray(session);
-            console.log(session.userData.playerDataArray);
+            // console.log(session.userData.playerDataArray);
+            }
         }
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
@@ -146,14 +176,22 @@ bot.dialog('selectDate', [
 // Dialog to select Age Group 
 bot.dialog('selectAgeGroup', [
     function (session) {
-        builder.Prompts.choice(session, "Please select age group", "U10|U11|U12|U13|U14|U15|U16|U17|U18|U19", {listStyle:3});
-        console.log('Prompts done');
+        builder.Prompts.confirm(session, "This deletes all the data you've entered. Are you sure you want to proceed?");
     },
-    function (session, results) {
+    function (session, results, next) {
+        if (results.response) {
+            builder.Prompts.choice(session, "Please select age group", "U10|U11|U12|U13|U14|U15|U16|U17|U18|U19", {listStyle:3});
+        } else {
+            next();
+        }
+    },
+    function (session, results, next) {
+        if (results.response != undefined) {
         session.userData.tryoutAgeGroup = results.response.entity;
         if (session.userData.tryoutDate && session.userData.tryoutAgeGroup && session.userData.tryoutGender) {
             loadPlayerDataArray(session);
-            console.log(session.userData.playerDataArray);
+            // console.log(session.userData.playerDataArray);
+            }
         }
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
@@ -161,18 +199,24 @@ bot.dialog('selectAgeGroup', [
 
 // Dialog to select Age Group 
 bot.dialog('selectGender', [
-    function (session, results) {
-
-        builder.Prompts.choice(session, "Please select gender", "Boys|Girls", {listStyle:3});
+    function (session) {
+        builder.Prompts.confirm(session, "This deletes all the data you've entered. Are you sure you want to proceed?");
     },
-    function (session, results) {
-
-        
+    function (session, results, next) {
+        if (results.response) {
+            builder.Prompts.choice(session, "Please select gender", "Boys|Girls", {listStyle:3});
+        } else {
+            next()
+        }
+    },
+    function (session, results, next) {
+        if (results.response != undefined) {
         session.userData.tryoutGender = results.response.entity;
         session.userData.dialogContext = this;
         if (session.userData.tryoutDate && session.userData.tryoutAgeGroup && session.userData.tryoutGender) {
             loadPlayerDataArray(session);
-            console.log(session.userData.playerDataArray);
+            // console.log(session.userData.playerDataArray);
+            }
         }
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
@@ -208,10 +252,10 @@ bot.dialog('selectPlayer', [
     },
     function (session, results) {
         // check to see if number already has a playerData object, if not create new one //
-        console.log('Player number to track '+ results.response);
+        // console.log('Player number to track '+ results.response);
         indexToDisplay = session.userData.playerDataArray.findIndex(function(currentValue, index) {
             return session.userData.playerDataArray[index].playerNumber==results.response});
-        console.log('Index to Display= ' + indexToDisplay);
+        // console.log('Index to Display= ' + indexToDisplay);
         if (indexToDisplay == -1) 
             {   var newPlayerData = new PlayerData;
                 newPlayerData.playerNumber = results.response;
@@ -220,7 +264,7 @@ bot.dialog('selectPlayer', [
                 session.userData.playerDataArray.push(newPlayerData);
                 //find index of last element of playerDataArray
                 indexToDisplay = session.userData.playerDataArray.unshift() - 1;
-                console.log('new playerTracking object added');
+                // console.log('new playerTracking object added');
             };
         session.userData.playerDisplayArray.splice(0,0,indexToDisplay);
         session.save();
@@ -231,7 +275,7 @@ bot.dialog('selectPlayer', [
 // Dialog to close player 
 bot.dialog('closePlayer', [
     function (session) {
-        console.log('closePlayer called');
+        // console.log('closePlayer called');
         //strips 'closePlayer' from the message that called the dialog
         playerNumberToClose = session.message.text.slice(11);
         playerDataIndexToClose = session.userData.playerDataArray.findIndex(function(currentValue, index) {
@@ -249,20 +293,22 @@ bot.dialog('closePlayer', [
 // Dialog to update Game Skills Score 
 bot.dialog('updateTechnicalSkills', [
     function (session) {
-        console.log('updateTechnicalSkills called');
+        // console.log('updateTechnicalSkills called');
         //strips updateTechnicalSkills' from the message that called the dialog
         playerNumberToUpdate = session.message.text.slice(21);
 
         indexToUpdate = session.userData.playerDataArray.findIndex(function(currentValue, index) {
             return session.userData.playerDataArray[index].playerNumber==parseInt(playerNumberToUpdate);
         });
-        console.log('Update Index' + indexToUpdate);
+        // console.log('Update Index' + indexToUpdate);
         builder.Prompts.number(session, "Please enter new Game Skills score (1-5)");
     },
     function (session, results) {
         session.userData.playerDataArray[indexToUpdate].technicalSkills = results.response;
+        var date = new Date();
+        session.userData.playerDataArray[indexToUpdate].timestamp = date.toISOString();
         movePlayerToFrontOfDisplay(session,indexToUpdate);
-        console.log("Player " + playerNumberToUpdate + " Technical Skills set to " + session.userData.playerDataArray[indexToUpdate].technicalSkills);
+        // console.log("Player " + playerNumberToUpdate + " Technical Skills set to " + session.userData.playerDataArray[indexToUpdate].technicalSkills);
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
 ]).triggerAction({ matches: /updateTechnicalSkills/i });
@@ -279,20 +325,22 @@ function movePlayerToFrontOfDisplay (session, playerDataArrayIndex) {
 // Dialog to update Game Skills Score 
 bot.dialog('updateGameSkills', [
     function (session) {
-        console.log('updateGameSkills called');
+        // console.log('updateGameSkills called');
         //strips updateGameSkills' from the message that called the dialog
         playerNumberToUpdate = session.message.text.slice(16);
 
         indexToUpdate = session.userData.playerDataArray.findIndex(function(currentValue, index) {
             return session.userData.playerDataArray[index].playerNumber==parseInt(playerNumberToUpdate);
         });
-        console.log('Update Index' + indexToUpdate);
+        // console.log('Update Index' + indexToUpdate);
         builder.Prompts.number(session, "Please enter new Game Skills score (1-5)");
     },
     function (session, results) {
         session.userData.playerDataArray[indexToUpdate].gameSkills = results.response;
+        var date = new Date();
+        session.userData.playerDataArray[indexToUpdate].timestamp = date.toISOString();
         movePlayerToFrontOfDisplay(session,indexToUpdate);
-        console.log("Player " + playerNumberToUpdate + " Game Skills set to " + session.userData.playerDataArray[indexToUpdate].gameSkills);
+        // console.log("Player " + playerNumberToUpdate + " Game Skills set to " + session.userData.playerDataArray[indexToUpdate].gameSkills);
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
 ]).triggerAction({ matches: /updateGameSkills/i });
@@ -300,20 +348,22 @@ bot.dialog('updateGameSkills', [
 // Dialog to update athleticism Score 
 bot.dialog('updateAthleticism', [
     function (session) {
-        console.log('updateathleticism called');
+        // console.log('updateathleticism called');
         //strips updateGameSkills' from the message that called the dialog
         playerNumberToUpdate = session.message.text.slice(17);
 
         indexToUpdate = session.userData.playerDataArray.findIndex(function(currentValue, index) {
             return session.userData.playerDataArray[index].playerNumber==parseInt(playerNumberToUpdate);
         });
-        console.log('Update Index' + indexToUpdate);
+        // console.log('Update Index' + indexToUpdate);
         builder.Prompts.number(session, "Please enter new Game Skills score (1-5)");
     },
     function (session, results) {
         session.userData.playerDataArray[indexToUpdate].athleticism = results.response;
+        var date = new Date();
+        session.userData.playerDataArray[indexToUpdate].timestamp = date.toISOString();
         movePlayerToFrontOfDisplay(session,indexToUpdate);
-        console.log("Player " + playerNumberToUpdate + " Game Skills set to " + session.userData.playerDataArray[indexToUpdate].athleticism);
+        // console.log("Player " + playerNumberToUpdate + " Game Skills set to " + session.userData.playerDataArray[indexToUpdate].athleticism);
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
 ]).triggerAction({ matches: /updateAthleticism/i });
@@ -321,20 +371,22 @@ bot.dialog('updateAthleticism', [
 // Dialog to update athleticism Score 
 bot.dialog('updateIntangibles', [
     function (session) {
-        console.log('updateIntangibles called');
+        // console.log('updateIntangibles called');
         //strips updateGameSkills' from the message that called the dialog
         playerNumberToUpdate = session.message.text.slice(17);
 
         indexToUpdate = session.userData.playerDataArray.findIndex(function(currentValue, index) {
             return session.userData.playerDataArray[index].playerNumber==parseInt(playerNumberToUpdate);
         });
-        console.log('Update Index' + indexToUpdate);
+        // console.log('Update Index' + indexToUpdate);
         builder.Prompts.number(session, "Please enter new Game Skills score (1-5)");
     },
     function (session, results) {
         session.userData.playerDataArray[indexToUpdate].intangibles = results.response;
+        var date = new Date();
+        session.userData.playerDataArray[indexToUpdate].timestamp = date.toISOString();
         movePlayerToFrontOfDisplay(session,indexToUpdate);
-        console.log("Player " + playerNumberToUpdate + " Game Skills set to " + session.userData.playerDataArray[indexToUpdate].intangibles);
+        // console.log("Player " + playerNumberToUpdate + " Game Skills set to " + session.userData.playerDataArray[indexToUpdate].intangibles);
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
 ]).triggerAction({ matches: /updateIntangibles/i });
@@ -342,25 +394,27 @@ bot.dialog('updateIntangibles', [
 // Dialog to update athleticism Score 
 bot.dialog('updateComments', [
     function (session) {
-        console.log('updateComments called');
+        // console.log('updateComments called');
         //strips updateComments' from the message that called the dialog
         playerNumberToUpdate = session.message.text.slice(14);
 
         indexToUpdate = session.userData.playerDataArray.findIndex(function(currentValue, index) {
             return session.userData.playerDataArray[index].playerNumber==parseInt(playerNumberToUpdate);
         });
-        console.log('Update Index' + indexToUpdate);
+        // console.log('Update Index' + indexToUpdate);
         builder.Prompts.text(session, "Please enter add additional comments");
     },
     function (session, results) {
-        session.userData.playerDataArray[indexToUpdate].comments += (", " + results.response);
+        session.userData.playerDataArray[indexToUpdate].comments += (results.response + ", ");
+        var date = new Date();
+        session.userData.playerDataArray[indexToUpdate].timestamp = date.toISOString();
         movePlayerToFrontOfDisplay(session,indexToUpdate);
-        console.log("Player " + playerNumberToUpdate + " Comments set to " + session.userData.playerDataArray[indexToUpdate].comments);
+        // console.log("Player " + playerNumberToUpdate + " Comments set to " + session.userData.playerDataArray[indexToUpdate].comments);
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
 ]).triggerAction({ matches: /updateComments/i });
 
-//spin up wthe web server
+//spin up the web server
 var server = restify.createServer();
 
 server.listen(process.env.port || process.env.PORT || 3978, function () {
@@ -369,11 +423,9 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
 
 });
 
-
-
 server.post('/api/messages', connector.listen());
 
-
+//load player data from SQL 
 function loadPlayerDataArray (session) {
     session.userData.playerDataArray = [];
     session.userData.playerDisplayArray = [];
@@ -409,8 +461,10 @@ connection.on('connect', function(err) {
 }); 
 
 function executeSQLRequest(sqlString) {
-    console.log('Executing SQL Request');
-    request = new Request(sqlString, function(err) {
+    // console.log('Executing SQL Request');
+    request = new Request(
+        sqlString, 
+        function(err) {
             if (err) {  
             console.log('SQL request error' + err);
             console.log(sqlString);
@@ -450,11 +504,8 @@ function executeSQLRequest(sqlString) {
     }); 
 
     request.on('requestCompleted', function () { 
-        console.log('returning fetchedPlayerList'); //request context
-        console.log(localPlayerDataArray);
+        // console.log('returning fetchedPlayerList'); //request context
+        // console.log(localPlayerDataArray);
         return;
     });
 };
-
-
-
