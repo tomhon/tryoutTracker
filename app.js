@@ -425,6 +425,12 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
 
 server.post('/api/messages', connector.listen());
 
+// web interface
+server.get('/', restify.serveStatic({
+    directory: __dirname,
+    default: '/index.html',
+   }));
+
 //load player data from SQL 
 function loadPlayerDataArray (session) {
     session.userData.playerDataArray = [];
