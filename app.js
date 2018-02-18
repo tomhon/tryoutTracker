@@ -28,8 +28,8 @@ var azureTableClient = new azure.AzureTableClient(tableName, storageName, storag
 var tableStorage = new azure.AzureBotStorage({gzipData: false}, azureTableClient);
 
 var connector = new builder.ChatConnector({
-    appId: process.env.MICROSOFT_APP_ID,
-    appPassword: process.env.MICROSOFT_APP_PASSWORD,
+    appId: process.env.MicrosoftAppId,
+    appPassword: process.env.MicrosoftAppPassword,
     openIdMetadata: process.env.BotOpenIdMetadata
 });
 
