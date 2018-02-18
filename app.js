@@ -426,7 +426,7 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
 server.post('/api/messages', connector.listen());
 
 // web interface
-server.get('/', restify.serveStatic({
+server.get('/', restify.plugins.serveStatic({
     directory: __dirname,
     default: '/index.html',
    }));
