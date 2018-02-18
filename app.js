@@ -64,18 +64,31 @@ var date;
 
 var inMemoryStorage = new builder.MemoryBotStorage();
 
-var bot = new builder.UniversalBot(connector, function (session) {
-;
-    if (session.userData.playerDataArray == undefined) {
-        console.log('WARNING: playerDataArray cleared'); 
-        session.userData.playerDataArray = Array()};
-    if (session.userData.playerDisplayArray == undefined) { session.userData.playerDisplayArray = Array()};
-    // session.userData.playerDataArray.push(currentPlayerData);
-    // console.log('PlayerDataArray = ' + session.userData.playerDataArray); //context Array[1]
-    // session.userData.playerDisplayArray.push(0);
-    session.beginDialog('mainNavigationCarousel').endDialog();
+var bot = new builder.UniversalBot(connector, 
+    function (session) {
+        if (session.userData.playerDataArray == undefined) { session.userData.playerDataArray = Array()};
+        if (session.userData.playerDisplayArray == undefined) { session.userData.playerDisplayArray = Array()};
+        var msg = new builder.Message(session);
+        msg.attachmentLayout(builder.AttachmentLayout.carousel)
+        msg.attachments([
+            new builder.HeroCard(session)
+                .title("Welcome to Crossfire Select Tryout Tracking Bot.")
+                .subtitle('Hi ' + session.message.user.name + " I'm here to help you run a great tryout!")
+                .text("First select the date, age group and gender for this tryout || Next, select the player numbers you're tracking so I can display them for you || When you move to track other players you can hide the ones you've stopped tracking and add others || Finally, press 'Tryout Complete' when you're finished.")
+                .images([builder.CardImage.create(session, 'http://www.lwysa.org/imagedata/lp_panel_select.png')])
+                .buttons([
+                    builder.CardAction.imBack(session, "letsGo", "Ready to go?" )
+                ])
+            ]);
+        session.send(msg);
 
-}).set('storage', tableStorage);
+        // session.userData.playerDataArray.push(currentPlayerData);
+        // console.log('PlayerDataArray = ' + session.userData.playerDataArray); //context Array[1]
+        // session.userData.playerDisplayArray.push(0);
+        // builder.Prompts.choice(session, "Let's get started!", "OK", {listStyle:3});
+        // session.beginDialog('mainNavigationCarousel').endDialog();
+        session.endDialog();
+        }).set('storage', tableStorage);
 // }).set('storage', sqlStorage); //doesn't work!!!
 // }).set('storage', inMemoryStorage);
 
@@ -128,20 +141,23 @@ bot.dialog('mainNavigationCarousel', function (session) {
     }
     session.send(msg);
     session.endDialog();
-});
+}).triggerAction({ matches: /letsGo/i });
 
 var logTryoutData = require("./logTryoutData");
 
 // Dialog to select date 
 bot.dialog('storeData', [
     function (session) {
-        builder.Prompts.confirm(session, "Are you sure you want to save your tryout tracking data?");
+        builder.Prompts.choice(session, "Are you sure you want to save your tryout tracking data?", "Yes|No", {listStyle:3});
     },
-    function (session, results) {
-        if (results.response) {
+    function (session, results, next) {
+        if (results.response.entity == 'Yes') {
             session.userData.tryoutComplete = true;
             session.save();
             logTryoutData(session.userData, session.message.user.name);
+            session.userData.tryoutDate = "Please Enter";
+            session.userData.tryoutAgeGroup = "Please Enter";
+            session.userData.tryoutGender = "Please Enter";
         } else {
 
         }
