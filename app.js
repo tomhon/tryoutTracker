@@ -302,7 +302,7 @@ bot.dialog('updateTechnicalSkills', [
             return session.userData.playerDataArray[index].playerNumber==parseInt(playerNumberToUpdate);
         });
         // console.log('Update Index' + indexToUpdate);
-        builder.Prompts.number(session, "Please enter new Game Skills score (1-5)");
+        builder.Prompts.number(session, "Please enter new Technical Skills score (1-5)");
     },
     function (session, results) {
         session.userData.playerDataArray[indexToUpdate].technicalSkills = results.response;
@@ -357,7 +357,7 @@ bot.dialog('updateAthleticism', [
             return session.userData.playerDataArray[index].playerNumber==parseInt(playerNumberToUpdate);
         });
         // console.log('Update Index' + indexToUpdate);
-        builder.Prompts.number(session, "Please enter new Game Skills score (1-5)");
+        builder.Prompts.number(session, "Please enter new Athleticism score (1-5)");
     },
     function (session, results) {
         session.userData.playerDataArray[indexToUpdate].athleticism = results.response;
@@ -380,7 +380,7 @@ bot.dialog('updateIntangibles', [
             return session.userData.playerDataArray[index].playerNumber==parseInt(playerNumberToUpdate);
         });
         // console.log('Update Index' + indexToUpdate);
-        builder.Prompts.number(session, "Please enter new Game Skills score (1-5)");
+        builder.Prompts.number(session, "Please enter new Intangibles score (1-5)");
     },
     function (session, results) {
         session.userData.playerDataArray[indexToUpdate].intangibles = results.response;
@@ -403,7 +403,7 @@ bot.dialog('updateComments', [
             return session.userData.playerDataArray[index].playerNumber==parseInt(playerNumberToUpdate);
         });
         // console.log('Update Index' + indexToUpdate);
-        builder.Prompts.text(session, "Please enter add additional comments");
+        builder.Prompts.text(session, "Please add comments");
     },
     function (session, results) {
         session.userData.playerDataArray[indexToUpdate].comments += (results.response + ", ");
