@@ -74,7 +74,7 @@ var bot = new builder.UniversalBot(connector,
             new builder.HeroCard(session)
                 .title("Welcome to Crossfire Select Tryout Tracking Bot.")
                 .subtitle('Hi ' + session.message.user.name + " I'm here to help you run a great tryout!")
-                .text("First select the date, age group and gender for this tryout || Next, select the player numbers you're tracking so I can display them for you || When you move to track other players you can hide the ones you've stopped tracking and add others || Finally, press 'Tryout Complete' when you're finished.")
+                .text("First select the date, age group and gender for this tryout || Next, select the bib numbers you're tracking so I can display them for you || When you move to track other players I can hide the bibs you've stopped tracking and add others || Finally, press 'Tryout Complete' to let me know you're finished.")
                 .images([builder.CardImage.create(session, 'http://www.lwysa.org/imagedata/lp_panel_select.png')])
                 .buttons([
                     builder.CardAction.imBack(session, "letsGo", "Ready to go?" )
@@ -103,10 +103,10 @@ bot.dialog('mainNavigationCarousel', function (session) {
     var msg = new builder.Message(session);
     msg.attachmentLayout(builder.AttachmentLayout.carousel);
     setupHeroCard = new builder.HeroCard(session)
-    .title('Select Players to Track')
-    .subtitle("Select Date, Age Group & Gender to load Player Data. Then select individual players to track.")
+    .title('Select Bibs to Track')
+    .subtitle("Select Date, Age Group & Gender || Select individual bibs to track")
     .buttons([
-        builder.CardAction.imBack(session, "selectPlayer", "Display Player#" ),
+        builder.CardAction.imBack(session, "selectPlayer", "Display Bib#" ),
         builder.CardAction.imBack(session, "selectDate", "Tryout Date: " + session.userData.tryoutDate ),
         builder.CardAction.imBack(session, "selectAgeGroup", "Age Group: " + session.userData.tryoutAgeGroup ),
         builder.CardAction.imBack(session, "selectGender", "Gender: " + session.userData.tryoutGender),
@@ -116,7 +116,7 @@ bot.dialog('mainNavigationCarousel', function (session) {
     function createPlayerHeroCard(session, playerIndex) {
         // console.log('createPlayerHeroCard called with' + playerNumber)
         playerHeroCard = new builder.HeroCard(session)
-        .title('Player #' + session.userData.playerDataArray[playerIndex].playerNumber + " " + session.userData.playerDataArray[playerIndex].playerName )
+        .title('Bib #' + session.userData.playerDataArray[playerIndex].playerNumber + " " + session.userData.playerDataArray[playerIndex].playerName )
         .subtitle(session.userData.playerDataArray[playerIndex].comments)
         .buttons([
             builder.CardAction.imBack(session, "updateTechnicalSkills"+session.userData.playerDataArray[playerIndex].playerNumber, "Technical Skills: " + session.userData.playerDataArray[playerIndex].technicalSkills ),
@@ -124,7 +124,7 @@ bot.dialog('mainNavigationCarousel', function (session) {
             builder.CardAction.imBack(session, "updateAthleticism"+session.userData.playerDataArray[playerIndex].playerNumber, "Athleticism: " + session.userData.playerDataArray[playerIndex].athleticism ),
             builder.CardAction.imBack(session, "updateIntangibles"+session.userData.playerDataArray[playerIndex].playerNumber, "Intangibles: " + session.userData.playerDataArray[playerIndex].intangibles ),
             builder.CardAction.imBack(session, "updateComments"+session.userData.playerDataArray[playerIndex].playerNumber, "Add Comments" ),
-            builder.CardAction.imBack(session, "closePlayer"+session.userData.playerDataArray[playerIndex].playerNumber, "Hide this Player" ),
+            builder.CardAction.imBack(session, "closePlayer"+session.userData.playerDataArray[playerIndex].playerNumber, "Hide this Bib" ),
         ])
         return playerHeroCard;
     }
@@ -456,7 +456,7 @@ function loadPlayerDataArray (session) {
     session.userData.playerDataArray = [];
     session.userData.playerDisplayArray = [];
     localPlayerDataArray.forEach(function(item){
-        if (session.userData.tryoutDate == item.tryoutDate 
+        if (session.userData.tryoutDate == item.tryoutDate.toISOString().slice(0,10) 
             && session.userData.tryoutAgeGroup == item.playerAgeGroup 
             && session.userData.tryoutGender == item.playerGender) 
             {
