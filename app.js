@@ -265,7 +265,7 @@ bot.dialog('displayData', [
 // Dialog to select player 
 bot.dialog('selectPlayer', [
     function (session) {
-        builder.Prompts.number(session, "Please select player number to track");
+        builder.Prompts.number(session, "Please select bib number to track");
     },
     function (session, results) {
         // check to see if number already has a playerData object, if not create new one //
@@ -302,7 +302,7 @@ bot.dialog('closePlayer', [
             return session.userData.playerDisplayArray[index]==playerDataIndexToClose;
         });
         session.userData.playerDisplayArray.splice(playerDisplayIndexToClose,1);
-        console.log('Closing Display Index' + playerDisplayIndexToClose);
+        // console.log('Closing Display Index' + playerDisplayIndexToClose);
         session.beginDialog('mainNavigationCarousel').endDialog();
     }
 ]).triggerAction({ matches: /closePlayer/i });
