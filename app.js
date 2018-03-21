@@ -10,7 +10,6 @@ var TYPES = require('tedious').TYPES;
 // var Request = require('tedious').Request  
 // var TYPES = require('tedious').TYPES;  
 
-
 var sqlConfig = require('./config');
 // var trackingAdaptiveCard = require('./adaptiveCard');
 
@@ -32,8 +31,6 @@ var connector = new builder.ChatConnector({
     appPassword: process.env.MicrosoftAppPassword,
     openIdMetadata: process.env.BotOpenIdMetadata
 });
-
-
 
 
 
@@ -68,6 +65,9 @@ var bot = new builder.UniversalBot(connector,
     function (session) {
         if (session.userData.playerDataArray == undefined) { session.userData.playerDataArray = Array()};
         if (session.userData.playerDisplayArray == undefined) { session.userData.playerDisplayArray = Array()};
+       if (session.userData.tryoutDate == undefined) {session.userData.tryoutDate = "Enter date,"};
+        if (session.userData.tryoutAgeGroup == undefined) {session.userData.tryoutAgeGroup = "Enter Age Group,"};
+        if (session.userData.tryoutGender == undefined) {session.userData.tryoutGender = "Enter Gender"};
         var msg = new builder.Message(session);
         msg.attachmentLayout(builder.AttachmentLayout.carousel)
         msg.attachments([
@@ -76,9 +76,9 @@ var bot = new builder.UniversalBot(connector,
                 .subtitle('Hi ' + session.message.user.name + " I'm here to help you run a great tryout!")
                 .text("First select the date, age group and gender for this tryout || Next, select the bib numbers you're tracking so I can display them for you || When you move to track other players I can hide the bibs you've stopped tracking and add others || Finally, press 'Tryout Complete' to let me know you're finished.")
                 .images([builder.CardImage.create(session, 'http://www.lwysa.org/imagedata/lp_panel_select.png')])
-                .buttons([
-                    builder.CardAction.imBack(session, "letsGo", "Ready to go?" )
-                ])
+                // .buttons([
+                //     builder.CardAction.imBack(session, "letsGo", "Ready to go?" )
+                // ])
             ]);
         session.send(msg);
 
@@ -86,30 +86,26 @@ var bot = new builder.UniversalBot(connector,
         // console.log('PlayerDataArray = ' + session.userData.playerDataArray); //context Array[1]
         // session.userData.playerDisplayArray.push(0);
         // builder.Prompts.choice(session, "Let's get started!", "OK", {listStyle:3});
-        // session.beginDialog('mainNavigationCarousel').endDialog();
-        session.endDialog();
-        }).set('storage', tableStorage);
+        session.beginDialog('mainNavigationCarousel').endDialog();
+        // session.endDialog(msg);
+        // }).set('storage', tableStorage);
 // }).set('storage', sqlStorage); //doesn't work!!!
-// }).set('storage', inMemoryStorage);
-
-
+}).set('storage', inMemoryStorage);
 
 //dialog to display player and game details
 bot.dialog('mainNavigationCarousel', function (session) {
-
 
     // session.userData.playerDataArray = localPlayerDataArray;
     // console.log(session.userData.playerDataArray);
     var msg = new builder.Message(session);
     msg.attachmentLayout(builder.AttachmentLayout.carousel);
     setupHeroCard = new builder.HeroCard(session)
-    .title('Select Bibs to Track')
-    .subtitle("Select Date, Age Group & Gender || Select individual bibs to track")
+    .title('Tryout Tracker')
+    .subtitle( session.userData.tryoutDate + " " + session.userData.tryoutAgeGroup + " " + session.userData.tryoutGender 
+    + ": " + session.userData.playerDataArray.length + " Players available")
     .buttons([
-        builder.CardAction.imBack(session, "selectPlayer", "Display Bib#" ),
-        builder.CardAction.imBack(session, "selectDate", "Tryout Date: " + session.userData.tryoutDate ),
-        builder.CardAction.imBack(session, "selectAgeGroup", "Age Group: " + session.userData.tryoutAgeGroup ),
-        builder.CardAction.imBack(session, "selectGender", "Gender: " + session.userData.tryoutGender),
+        builder.CardAction.imBack(session, "selectPlayer", "Select Bib# to Track" ),
+        builder.CardAction.imBack(session, "selectTryout", "Select Date, Age Group & Gender" ),
         builder.CardAction.imBack(session, "storeData", "Tryout Complete - Save Results" )
     ]);
 
@@ -139,105 +135,63 @@ bot.dialog('mainNavigationCarousel', function (session) {
             msg.addAttachment(createPlayerHeroCard(session,element));
         });
     }
-    session.send(msg);
-    session.endDialog();
-}).triggerAction({ matches: /letsGo/i });
+    // session.send(msg);
+    session.endDialog(msg);
+});
 
 var logTryoutData = require("./logTryoutData");
 
 // Dialog to select date 
 bot.dialog('storeData', [
     function (session) {
-        builder.Prompts.choice(session, "Are you sure you want to save your tryout tracking data?", "Yes|No", {listStyle:3});
+        builder.Prompts.confirm(session, "Are you sure you want to save your tryout tracking data?", {listStyle:3});
     },
-    function (session, results, next) {
-        if (results.response.entity == 'Yes') {
+    function (session, results) {
+        if (results.response) {
             session.userData.tryoutComplete = true;
             session.save();
             logTryoutData(session.userData, session.message.user.name);
-            session.userData.tryoutDate = "Please Enter";
-            session.userData.tryoutAgeGroup = "Please Enter";
-            session.userData.tryoutGender = "Please Enter";
-        } else {
-
-        }
+        } 
+        session.endDialog();
         // session.userData.tryoutComplete = false;
-        session.beginDialog('mainNavigationCarousel').endDialog();
+
     }
 ]).triggerAction({ matches: /storeData/i });
 
-// Dialog to select date 
-bot.dialog('selectDate', [
+//dialog to display player and game details
+bot.dialog('selectTryout', [
     function (session) {
-        builder.Prompts.choice(session, "This deletes all the data you've entered. Are you sure you want to proceed?", "Yes|No", {listStyle:3});
-    },
+        // builder.Prompts.confirm(session, "Are you sure you want to start tracking a new Tryout?", "Yes|No", {listStyle:3});
+        builder.Prompts.confirm(session, "Are you sure you want to start tracking a new Tryout?", {listStyle:3});
+        },
     function (session, results, next) {
-        if (results.response.entity == 'Yes') {
+            if (!results.response) {
+                session.replaceDialog('mainNavigationCarousel');
+                // session.endDialog("OK I'll keep the current Tryout");
+            } else {next()}
+        },
+    function (session, results, next) {
+            session.save();
+            logTryoutData(session.userData, session.message.user.name);
             builder.Prompts.time(session, "Please select Tryout date");
-        } else {
             next();
-        }
-    },
+        },
     function (session, results, next) {
-        if (results.response != undefined) {
-        session.userData.tryoutDate = builder.EntityRecognizer.resolveTime([results.response]).toISOString().slice(0,10);
-        if (session.userData.tryoutDate && session.userData.tryoutAgeGroup && session.userData.tryoutGender) {
-            loadPlayerDataArray(session);
-            // console.log(session.userData.playerDataArray);
-            }
-        }
-        session.beginDialog('mainNavigationCarousel').endDialog();
-    }
-]).triggerAction({ matches: /selectDate/i });
-
-// Dialog to select Age Group 
-bot.dialog('selectAgeGroup', [
-    function (session) {
-        builder.Prompts.choice(session, "This deletes all the data you've entered. Are you sure you want to proceed?", "Yes|No", {listStyle:3});
-    },
-    function (session, results, next) {
-        if (results.response.entity == 'Yes') {
+            session.userData.tryoutDate = builder.EntityRecognizer.resolveTime([results.response]).toISOString().slice(0,10);
             builder.Prompts.choice(session, "Please select age group", "U10|U11|U12|U13|U14|U15|U16|U17|U18|U19", {listStyle:3});
-        } else {
             next();
-        }
-    },
+        },
     function (session, results, next) {
-        if (results.response != undefined) {
-        session.userData.tryoutAgeGroup = results.response.entity;
-        if (session.userData.tryoutDate && session.userData.tryoutAgeGroup && session.userData.tryoutGender) {
-            loadPlayerDataArray(session);
-            // console.log(session.userData.playerDataArray);
-            }
-        }
-        session.beginDialog('mainNavigationCarousel').endDialog();
-    }
-]).triggerAction({ matches: /selectAgeGroup/i });
-
-// Dialog to select Age Group 
-bot.dialog('selectGender', [
-    function (session) {
-        builder.Prompts.choice(session, "This deletes all the data you've entered. Are you sure you want to proceed?", "Yes|No", {listStyle:3});
-    },
-    function (session, results, next) {
-        if (results.response.entity == 'Yes') {
+            session.userData.tryoutAgeGroup = results.response.entity;
             builder.Prompts.choice(session, "Please select gender", "Boys|Girls", {listStyle:3});
-        } else {
-            next()
-        }
-    },
+            next();
+        },
     function (session, results, next) {
-        if (results.response != undefined) {
-        session.userData.tryoutGender = results.response.entity;
-        session.userData.dialogContext = this;
-        if (session.userData.tryoutDate && session.userData.tryoutAgeGroup && session.userData.tryoutGender) {
+            session.userData.tryoutGender = results.response.entity;
             loadPlayerDataArray(session);
-            // console.log(session.userData.playerDataArray);
-            }
-        }
-        session.beginDialog('mainNavigationCarousel').endDialog();
-    }
-]).triggerAction({ matches: /selectGender/i });
+            console.log(session.userData.playerDataArray);
+            session.beginDialog('mainNavigationCarousel').endDialog();
+        }]).triggerAction({ matches: /selectTryout/i });
 
 // Dialog to get data 
 bot.dialog('fetchData', [
@@ -338,7 +292,6 @@ function movePlayerToFrontOfDisplay (session, playerDataArrayIndex) {
     session.userData.playerDisplayArray.splice(0,0,playerDataArrayIndex);
 }
 
-
 // Dialog to update Game Skills Score 
 bot.dialog('updateGameSkills', [
     function (session) {
@@ -403,7 +356,7 @@ bot.dialog('updateIntangibles', [
     },
     function (session, results) {
         session.userData.playerDataArray[indexToUpdate].intangibles = results.response.entity;
-        var date = new Date();
+       var date = new Date();
         session.userData.playerDataArray[indexToUpdate].timestamp = date.toISOString();
         movePlayerToFrontOfDisplay(session,indexToUpdate);
         // console.log("Player " + playerNumberToUpdate + " Game Skills set to " + session.userData.playerDataArray[indexToUpdate].intangibles);
@@ -520,7 +473,7 @@ function executeSQLRequest(sqlString) {
                     break;}
                 case 'playerGender':
                     {retrievedPlayer.playerGender = column.value;
-                    break;}
+                   break;}
                 }
             }
         }); 
@@ -535,3 +488,4 @@ function executeSQLRequest(sqlString) {
         return;
     });
 };
+
