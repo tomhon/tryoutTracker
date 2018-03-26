@@ -88,9 +88,9 @@ var bot = new builder.UniversalBot(connector,
         // builder.Prompts.choice(session, "Let's get started!", "OK", {listStyle:3});
         session.beginDialog('mainNavigationCarousel').endDialog();
         // session.endDialog(msg);
-        // }).set('storage', tableStorage);
+        }).set('storage', tableStorage);
 // }).set('storage', sqlStorage); //doesn't work!!!
-}).set('storage', inMemoryStorage);
+// }).set('storage', inMemoryStorage);
 
 //dialog to display player and game details
 bot.dialog('mainNavigationCarousel', function (session) {
@@ -104,7 +104,7 @@ bot.dialog('mainNavigationCarousel', function (session) {
     .subtitle( session.userData.tryoutDate + " " + session.userData.tryoutAgeGroup + " " + session.userData.tryoutGender 
     + ": " + session.userData.playerDataArray.length + " Players available")
     .buttons([
-        builder.CardAction.imBack(session, "selectPlayer", "Select Bib# to Track" ),
+        builder.CardAction.imBack(session, "selectPlayer", "Show Bib# to Track" ),
         builder.CardAction.imBack(session, "selectTryout", "Select Date, Age Group & Gender" ),
         builder.CardAction.imBack(session, "storeData", "Tryout Complete - Save Results" )
     ]);
@@ -407,13 +407,14 @@ server.get('/', restify.plugins.serveStatic({
 //load player data from SQL 
 function loadPlayerDataArray (session) {
     session.userData.playerDataArray = [];
-    session.userData.playerDisplayArray = [];
+    session.userData.playerDisplayArray = []; //list of indexs into playerDataArray which defines the display order
     localPlayerDataArray.forEach(function(item){
         if (session.userData.tryoutDate == item.tryoutDate.toISOString().slice(0,10) 
             && session.userData.tryoutAgeGroup == item.playerAgeGroup 
             && session.userData.tryoutGender == item.playerGender) 
             {
                 session.userData.playerDataArray.push(item);
+                session.userData.playerDisplayArray.push(session.userData.playerDataArray.length-1);
             }
     })
 }

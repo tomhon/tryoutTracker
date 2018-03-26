@@ -17,10 +17,10 @@
   },
   "homepage": "https://github.com/tomhon/tryoutTracker#readme",
   "dependencies": {
-    "adaptivecards": "^1.0.0-beta10",
-    "botbuilder": "^3.14.0",
+    "adaptivecards": "^1.0.0",
+    "botbuilder": "^3.14.1",
     "botbuilder-azure": "^3.0.4",
-    "restify": "^6.3.4",
-    "tedious": "^2.3.1"
+    "restify": "^6.4.0",
+    "tedious": "^2.6.1"
   }
 }
